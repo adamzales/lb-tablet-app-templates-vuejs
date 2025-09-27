@@ -1,11 +1,12 @@
-﻿while GetResourceState("lb-tablet") ~= "started" do
+while GetResourceState("lb-tablet") ~= "started" do
     Wait(0)
 end
 
 local resourceName = GetCurrentResourceName()
 local appOpen = false
 local devUrl = GetConvar("lb_tablet_vue_dev_url", "")
-local uiPage = devUrl ~= "" and devUrl or "ui/dist/index.html"
+local isDev = devUrl ~= ""
+local uiPage = isDev and devUrl or "ui/dist/index.html"
 local degreeSymbol = string.char(194, 176)
 
 local function SendDirection()
@@ -36,11 +37,11 @@ end
 local function AddApp()
     local success, reason = exports["lb-tablet"]:AddCustomApp({
         identifier = resourceName,
-        name = devUrl ~= "" and "Vue Template (DEV)" or "Vue Template",
-        defaultApp = false,
+        name = isDev and "Vue Template (DEV)" or "Vue Template",
+        defaultApp = isDev,
         ui = uiPage,
 
-        icon = "/ui/dist/icon.webp",
+        icon = isDev and "/ui/dist/icon.webp" or "/ui/dist/icon.webp",
         removable = false,
 
         images = {
@@ -69,8 +70,8 @@ local function AddApp()
         print("Failed to add app: ", reason)
     else
         print("Successfully added app")
-        if devUrl ~= "" then
-            print("LB Tablet Vue app running in DEV mode at:", devUrl)
+        if isDev then
+            print("LB Tablet Vue app running in DEV mode at:", uiPage)
         end
     end
 end
