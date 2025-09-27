@@ -9,6 +9,12 @@ local isDev = devUrl ~= ""
 local uiPage = isDev and devUrl or "ui/dist/index.html"
 local degreeSymbol = string.char(194, 176)
 
+local function SendVisibility(state)
+    exports["lb-tablet"]:SendCustomAppMessage(resourceName, "toggleVisibility", {
+        visible = state and true or false
+    })
+end
+
 local function SendDirection()
     Wait(500) -- allow the app to initialize
 
@@ -58,11 +64,13 @@ local function AddApp()
         onOpen = function()
             print("open")
             appOpen = true
+            SendVisibility(true)
             SendDirection()
         end,
         onClose = function()
             print("close")
             appOpen = false
+            SendVisibility(false)
         end,
     })
 

@@ -9,6 +9,7 @@ const theme = ref('light')
 const direction = ref('N')
 const indicatorVisible = ref(true)
 const notificationText = ref('Notification text')
+const tabletVisible = ref(devMode)
 
 const appHeight = computed(() => (typeof globalThis.invokeNative === 'function' ? '100vh' : '100%'))
 const indicatorLabel = computed(() => (indicatorVisible.value ? 'Hide Indicator' : 'Show Indicator'))
@@ -24,10 +25,39 @@ const ensureVisibility = () => {
   }
 }
 
+const hideApp = () => {
+  if (devMode || typeof document === 'undefined') {
+    return
+  }
+
+  try {
+    document.documentElement.style.visibility = 'hidden'
+    document.body.style.visibility = 'hidden'
+  } catch (error) {
+    console.warn('[tablet] visibility hide failed', error)
+  }
+}
+
 const resolveDirection = (payload) => {
   if (typeof payload === 'string') return payload
   if (payload && typeof payload.direction === 'string') return payload.direction
   if (payload && typeof payload.payload !== 'undefined') return resolveDirection(payload.payload)
+  return null
+}
+
+const resolveVisibility = (payload) => {
+  if (typeof payload === 'boolean') return payload
+  if (typeof payload === 'number') return payload !== 0
+  if (typeof payload === 'string') {
+    const normalized = payload.toLowerCase()
+    if (normalized === 'true') return true
+    if (normalized === 'false') return false
+  }
+  if (payload && typeof payload.visible !== 'undefined') return resolveVisibility(payload.visible)
+  if (payload && typeof payload.value !== 'undefined') return resolveVisibility(payload.value)
+  if (payload && typeof payload.state !== 'undefined') return resolveVisibility(payload.state)
+  if (payload && typeof payload.payload !== 'undefined') return resolveVisibility(payload.payload)
+  if (payload && typeof payload.data !== 'undefined') return resolveVisibility(payload.data)
   return null
 }
 
@@ -148,6 +178,13 @@ useNuiEvent('updateDirection', (payload) => {
   }
 })
 
+useNuiEvent('toggleVisibility', (payload) => {
+  const next = resolveVisibility(payload)
+  if (typeof next === 'boolean') {
+    tabletVisible.value = next
+  }
+})
+
 onMounted(() => {
   if (devMode) {
     ensureVisibility()
@@ -169,7 +206,16 @@ onMounted(() => {
 
     if (!globalThis.GetParentResourceName) {
       ensureVisibility()
+      tabletVisible.value = true
     }
+  }
+})
+
+watch(tabletVisible, (value) => {
+  if (value) {
+    ensureVisibility()
+  } else {
+    hideApp()
   }
 })
 
@@ -201,7 +247,7 @@ watch(notificationText, (value) => {
       </Frame>
     </div>
     <TabletSurface
-      v-else
+      v-else-if="tabletVisible"
       :theme="theme"
       :direction="direction"
       :indicator-visible="indicatorVisible"
